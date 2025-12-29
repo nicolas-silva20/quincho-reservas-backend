@@ -33,7 +33,7 @@ public class ReservaService {
     private final DisponibilidadService disponibilidadService;
     private final EmailService emailService;
 
-    private static final BigDecimal DEPOSITO_GARANTIA = new BigDecimal("100000");
+    private static final BigDecimal DEPOSITO_GARANTIA = new BigDecimal("130000");
 
     /**
      * Crear una nueva reserva
