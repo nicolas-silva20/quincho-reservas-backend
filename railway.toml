@@ -1,0 +1,9 @@
+# Railway Deployment Configuration
+# Este archivo le dice a Railway c\u00f3mo construir y ejecutar tu aplicaci\u00f3n
+
+# Builder
+[build]
+builder = "NIXPACKS"
+
+# Variables de entorno (Railway las configura autom\u00e1ticamente)
+# No es necesario especificarlas aqu\u00ed, se configuran en el dashboard de Railway
