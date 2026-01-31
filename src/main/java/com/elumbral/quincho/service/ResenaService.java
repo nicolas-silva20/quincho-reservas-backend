@@ -100,7 +100,7 @@ public class ResenaService {
     }
 
     /**
-     * Aprobar una reseña
+     * Aprobar una reseña y generar token de encuesta
      */
     @Transactional
     public ResenaDTO aprobarResena(Long id) {
@@ -109,13 +109,23 @@ public class ResenaService {
 
         resena.setAprobada(true);
         resena.setFechaAprobacion(LocalDateTime.now());
+        resena = resenaRepository.save(resena);
+
+        // Generar token de encuesta si no existe
+        Reserva reserva = resena.getReserva();
+        if (reserva != null && reserva.getEncuestaToken() == null) {
+            String tokenEncuesta = java.util.UUID.randomUUID().toString();
+            reserva.setEncuestaToken(tokenEncuesta);
+            reserva = reservaRepository.save(reserva);
+            log.info("Token de encuesta generado para reserva {}", reserva.getId());
+        }
 
         log.info("Reseña {} aprobada", id);
-        return convertirADTO(resenaRepository.save(resena));
+        return convertirADTOConEncuesta(resena);
     }
 
     /**
-     * Rechazar/ocultar una reseña
+     * Rechazar/ocultar una reseña y generar token de encuesta
      */
     @Transactional
     public ResenaDTO rechazarResena(Long id) {
@@ -124,9 +134,19 @@ public class ResenaService {
 
         resena.setAprobada(false);
         resena.setFechaAprobacion(null);
+        resena = resenaRepository.save(resena);
+
+        // Generar token de encuesta si no existe
+        Reserva reserva = resena.getReserva();
+        if (reserva != null && reserva.getEncuestaToken() == null) {
+            String tokenEncuesta = java.util.UUID.randomUUID().toString();
+            reserva.setEncuestaToken(tokenEncuesta);
+            reserva = reservaRepository.save(reserva);
+            log.info("Token de encuesta generado para reserva {}", reserva.getId());
+        }
 
         log.info("Reseña {} rechazada/ocultada", id);
-        return convertirADTO(resenaRepository.save(resena));
+        return convertirADTOConEncuesta(resena);
     }
 
     /**
@@ -153,6 +173,24 @@ public class ResenaService {
                 .calificacion(resena.getCalificacion())
                 .fechaCreacion(resena.getFechaCreacion())
                 .aprobada(resena.getAprobada())
+                .build();
+    }
+
+    /**
+     * Convertir entidad a DTO con información de encuesta
+     */
+    private ResenaDTO convertirADTOConEncuesta(Resena resena) {
+        Reserva reserva = resena.getReserva();
+        return ResenaDTO.builder()
+                .id(resena.getId())
+                .nombreCliente(resena.getCliente() != null ? resena.getCliente().getNombre() : "Cliente Desconocido")
+                .comentario(resena.getComentario())
+                .calificacion(resena.getCalificacion())
+                .fechaCreacion(resena.getFechaCreacion())
+                .aprobada(resena.getAprobada())
+                .encuestaToken(reserva != null ? reserva.getEncuestaToken() : null)
+                .telefonoCliente(resena.getCliente() != null ? resena.getCliente().getTelefono() : null)
+                .reservaId(reserva != null ? reserva.getId() : null)
                 .build();
     }
 }

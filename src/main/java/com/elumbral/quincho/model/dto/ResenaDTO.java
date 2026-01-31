@@ -19,4 +19,9 @@ public class ResenaDTO {
     private Integer calificacion;
     private LocalDateTime fechaCreacion;
     private Boolean aprobada;
+    
+    // Campos opcionales para generación de token de encuesta
+    private String encuestaToken;
+    private String telefonoCliente;
+    private Long reservaId;
 }

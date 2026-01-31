@@ -81,12 +81,6 @@ public class Reserva {
     @Column(name = "token_usado")
     private Boolean tokenUsado = false;
 
-    @Column(name = "encuesta_token", unique = true, length = 255)
-    private String encuestaToken;
-
-    @Column(name = "token_encuesta_usado")
-    private Boolean tokenEncuestaUsado = false;
-
     @PrePersist
     protected void onCreate() {
         fechaCreacion = LocalDateTime.now();
@@ -98,9 +92,6 @@ public class Reserva {
         }
         if (tokenUsado == null) {
             tokenUsado = false;
-        }
-        if (tokenEncuestaUsado == null) {
-            tokenEncuestaUsado = false;
         }
     }
 }

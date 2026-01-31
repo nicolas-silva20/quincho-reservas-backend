@@ -48,4 +48,10 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
     // ========================================
 
     Optional<Reserva> findByResenaToken(String token);
+
+    // ========================================
+    // NUEVO: BÚSQUEDA POR TOKEN DE ENCUESTA
+    // ========================================
+
+    Optional<Reserva> findByEncuestaToken(String token);
 }
