@@ -101,14 +101,14 @@ public class ResenaController {
     }
 
     /**
-     * ADMIN: Eliminar reseña
+     * ADMIN: Eliminar reseña y retornar datos de encuesta
      * DELETE /api/resenas/admin/{id}
      */
     @DeleteMapping("/admin/{id}")
-    public ResponseEntity<ApiResponseDTO<Void>> eliminarResena(@PathVariable Long id) {
+    public ResponseEntity<ApiResponseDTO<ResenaDTO>> eliminarResena(@PathVariable Long id) {
         try {
-            resenaService.eliminarResena(id);
-            return ResponseEntity.ok(ApiResponseDTO.success(null, "Reseña eliminada"));
+            ResenaDTO resenaDTO = resenaService.eliminarResena(id);
+            return ResponseEntity.ok(ApiResponseDTO.success(resenaDTO, "Reseña eliminada"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity
                     .badRequest()

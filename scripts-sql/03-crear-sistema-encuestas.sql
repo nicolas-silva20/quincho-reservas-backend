@@ -1,4 +1,4 @@
--- ========================================
+﻿-- ========================================
 -- SCRIPT SQL: Sistema de Encuestas de Satisfacción
 -- Proyecto: El Umbral - Quincho Reservas
 -- ========================================
@@ -38,25 +38,36 @@ CREATE TABLE IF NOT EXISTS encuestas_satisfaccion (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------------------
--- 2. ALTERAR TABLA RESERVAS
+-- 2. ALTERAR TABLA RESERVAS (SEGURO)
 -- ----------------------------------------
 
--- Agregar campos para token de encuesta
-ALTER TABLE reservas
-ADD COLUMN IF NOT EXISTS encuesta_token VARCHAR(255) UNIQUE,
-ADD COLUMN IF NOT EXISTS token_encuesta_usado BOOLEAN DEFAULT FALSE;
+-- Verificar si las columnas ya existen antes de agregarlas
+-- Si ya existen, esto dará error pero es seguro ignorarlo
 
--- Crear índice para búsqueda por token de encuesta
-CREATE INDEX IF NOT EXISTS idx_encuesta_token ON reservas(encuesta_token);
+-- Agregar encuesta_token
+ALTER TABLE reservas 
+ADD COLUMN encuesta_token VARCHAR(255) UNIQUE;
+
+-- Agregar token_encuesta_usado
+ALTER TABLE reservas 
+ADD COLUMN token_encuesta_usado BOOLEAN DEFAULT FALSE;
+
+-- Crear índice para búsqueda por token
+CREATE INDEX idx_encuesta_token ON reservas(encuesta_token);
 
 -- ========================================
 -- SCRIPT COMPLETADO
 -- ========================================
 -- Tablas creadas/modificadas:
--- 1. encuestas_satisfaccion (NUEVA)
--- 2. reservas (MODIFICADA: + encuesta_token, token_encuesta_usado)
+-- 1. encuestas_satisfaccion (NUEVA - con IF NOT EXISTS es seguro)
+-- 2. reservas (MODIFICADA - si columnas ya existen, ignorar error)
+--
+-- NOTA: Si las columnas ya existen, verás errores "Duplicate column name"
+-- Esto es NORMAL y SEGURO - significa que ya están creadas.
 --
 -- Para revertir cambios:
 -- DROP TABLE IF EXISTS encuestas_satisfaccion;
--- ALTER TABLE reservas DROP COLUMN encuesta_token, DROP COLUMN token_encuesta_usado;
+-- ALTER TABLE reservas DROP COLUMN encuesta_token;
+-- ALTER TABLE reservas DROP COLUMN token_encuesta_usado;
+-- DROP INDEX idx_encuesta_token ON reservas;
 -- ========================================

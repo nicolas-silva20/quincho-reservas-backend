@@ -1,4 +1,4 @@
-package com.elumbral.quincho.service;
+﻿package com.elumbral.quincho.service;
 
 import com.elumbral.quincho.model.dto.ResenaDTO;
 import com.elumbral.quincho.model.dto.ResenaRequestDTO;
@@ -25,7 +25,7 @@ public class ResenaService {
     private final ReservaRepository reservaRepository;
 
     /**
-     * Obtener reseñas destacadas (últimas 3 aprobadas)
+     * Obtener reseÃ±as destacadas (Ãºltimas 3 aprobadas)
      */
     public List<ResenaDTO> obtenerResenasDestacadas() {
         return resenaRepository.findTop3ByAprobadaTrueOrderByFechaCreacionDesc()
@@ -35,7 +35,7 @@ public class ResenaService {
     }
 
     /**
-     * Obtener todas las reseñas aprobadas (público)
+     * Obtener todas las reseÃ±as aprobadas (pÃºblico)
      */
     public List<ResenaDTO> obtenerResenasAprobadas() {
         return resenaRepository.findByAprobadaTrueOrderByFechaCreacionDesc()
@@ -45,39 +45,39 @@ public class ResenaService {
     }
 
     /**
-     * Crear reseña usando token de reserva completada
+     * Crear reseÃ±a usando token de reserva completada
      */
     @Transactional
     public ResenaDTO crearResenaConToken(ResenaRequestDTO request) {
-        log.info("Intentando crear reseña con token");
+        log.info("Intentando crear reseÃ±a con token");
 
-        // Validar calificación
+        // Validar calificaciÃ³n
         if (request.getCalificacion() < 1 || request.getCalificacion() > 5) {
-            throw new IllegalArgumentException("La calificación debe estar entre 1 y 5");
+            throw new IllegalArgumentException("La calificaciÃ³n debe estar entre 1 y 5");
         }
 
         // Buscar reserva por token
         Reserva reserva = reservaRepository.findByResenaToken(request.getToken())
-                .orElseThrow(() -> new IllegalArgumentException("Token inválido o expirado"));
+                .orElseThrow(() -> new IllegalArgumentException("Token invÃ¡lido o expirado"));
 
-        // Validar que la reserva esté finalizada
+        // Validar que la reserva estÃ© finalizada
         if (reserva.getEstado() != EstadoReserva.FINALIZADA) {
-            throw new IllegalArgumentException("Solo se pueden dejar reseñas para reservas finalizadas");
+            throw new IllegalArgumentException("Solo se pueden dejar reseÃ±as para reservas finalizadas");
         }
 
         // Validar que el token no haya sido usado
         if (reserva.getTokenUsado()) {
-            throw new IllegalArgumentException("Este token ya fue utilizado para dejar una reseña");
+            throw new IllegalArgumentException("Este token ya fue utilizado para dejar una reseÃ±a");
         }
 
-        // Crear la reseña
+        // Crear la reseÃ±a
         Resena resena = new Resena();
         resena.setReserva(reserva);
         resena.setCliente(reserva.getCliente());
         resena.setCalificacion(request.getCalificacion());
         resena.setComentario(request.getComentario());
         resena.setFechaCreacion(LocalDateTime.now());
-        resena.setAprobada(false); // Por defecto pendiente de aprobación
+        resena.setAprobada(false); // Por defecto pendiente de aprobaciÃ³n
 
         resena = resenaRepository.save(resena);
 
@@ -85,12 +85,12 @@ public class ResenaService {
         reserva.setTokenUsado(true);
         reservaRepository.save(reserva);
 
-        log.info("Reseña creada exitosamente con ID: {}", resena.getId());
+        log.info("ReseÃ±a creada exitosamente con ID: {}", resena.getId());
         return convertirADTO(resena);
     }
 
     /**
-     * Obtener todas las reseñas (admin)
+     * Obtener todas las reseÃ±as (admin)
      */
     public List<ResenaDTO> obtenerTodasLasResenas() {
         return resenaRepository.findAllByOrderByFechaCreacionDesc()
@@ -100,12 +100,12 @@ public class ResenaService {
     }
 
     /**
-     * Aprobar una reseña y generar token de encuesta
+     * Aprobar una reseÃ±a y generar token de encuesta
      */
     @Transactional
     public ResenaDTO aprobarResena(Long id) {
         Resena resena = resenaRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Reseña no encontrada"));
+                .orElseThrow(() -> new IllegalArgumentException("ReseÃ±a no encontrada"));
 
         resena.setAprobada(true);
         resena.setFechaAprobacion(LocalDateTime.now());
@@ -120,17 +120,17 @@ public class ResenaService {
             log.info("Token de encuesta generado para reserva {}", reserva.getId());
         }
 
-        log.info("Reseña {} aprobada", id);
+        log.info("ReseÃ±a {} aprobada", id);
         return convertirADTOConEncuesta(resena);
     }
 
     /**
-     * Rechazar/ocultar una reseña y generar token de encuesta
+     * Rechazar/ocultar una reseÃ±a y generar token de encuesta
      */
     @Transactional
     public ResenaDTO rechazarResena(Long id) {
         Resena resena = resenaRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Reseña no encontrada"));
+                .orElseThrow(() -> new IllegalArgumentException("ReseÃ±a no encontrada"));
 
         resena.setAprobada(false);
         resena.setFechaAprobacion(null);
@@ -145,21 +145,35 @@ public class ResenaService {
             log.info("Token de encuesta generado para reserva {}", reserva.getId());
         }
 
-        log.info("Reseña {} rechazada/ocultada", id);
+        log.info("ReseÃ±a {} rechazada/ocultada", id);
         return convertirADTOConEncuesta(resena);
     }
 
     /**
-     * Eliminar reseña permanentemente
+     * Eliminar reseña permanentemente y generar token de encuesta
      */
     @Transactional
-    public void eliminarResena(Long id) {
-        if (!resenaRepository.existsById(id)) {
-            throw new IllegalArgumentException("Reseña no encontrada");
+    public ResenaDTO eliminarResena(Long id) {
+        Resena resena = resenaRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Reseña no encontrada"));
+
+        // Generar token de encuesta antes de eliminar
+        Reserva reserva = resena.getReserva();
+        if (reserva != null && reserva.getEncuestaToken() == null) {
+            String tokenEncuesta = java.util.UUID.randomUUID().toString();
+            reserva.setEncuestaToken(tokenEncuesta);
+            reserva = reservaRepository.save(reserva);
+            log.info("Token de encuesta generado para reserva {}", reserva.getId());
         }
 
+        // Guardar datos para el DTO antes de eliminar
+        ResenaDTO dtoRespuesta = convertirADTOConEncuesta(resena);
+
+        // Eliminar la reseña
         resenaRepository.deleteById(id);
         log.info("Reseña {} eliminada permanentemente", id);
+
+        return dtoRespuesta;
     }
 
     /**
@@ -177,7 +191,7 @@ public class ResenaService {
     }
 
     /**
-     * Convertir entidad a DTO con información de encuesta
+     * Convertir entidad a DTO con informaciÃ³n de encuesta
      */
     private ResenaDTO convertirADTOConEncuesta(Resena resena) {
         Reserva reserva = resena.getReserva();
