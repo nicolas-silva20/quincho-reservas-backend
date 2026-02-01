@@ -154,8 +154,13 @@ public class ResenaService {
      */
     @Transactional
     public ResenaDTO eliminarResena(Long id) {
+        log.info("🔍 DEBUG SERVICE: Iniciando eliminación de reseña ID: {}", id);
+        
         Resena resena = resenaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Reseña no encontrada"));
+        
+        log.info("🔍 DEBUG SERVICE: Reseña encontrada: ID={}, Reserva={}", 
+                resena.getId(), resena.getReserva() != null ? resena.getReserva().getId() : "NULL");
 
         // Generar token de encuesta antes de eliminar
         Reserva reserva = resena.getReserva();
@@ -163,15 +168,19 @@ public class ResenaService {
             String tokenEncuesta = java.util.UUID.randomUUID().toString();
             reserva.setEncuestaToken(tokenEncuesta);
             reserva = reservaRepository.save(reserva);
-            log.info("Token de encuesta generado para reserva {}", reserva.getId());
+            log.info("✅ Token de encuesta generado para reserva {}: {}", reserva.getId(), tokenEncuesta);
+        } else if (reserva != null) {
+            log.info("⚠️ Reserva {} ya tiene token: {}", reserva.getId(), reserva.getEncuestaToken());
         }
 
         // Guardar datos para el DTO antes de eliminar
         ResenaDTO dtoRespuesta = convertirADTOConEncuesta(resena);
+        log.info("🔍 DEBUG SERVICE: DTO creado: {}", dtoRespuesta);
+        log.info("🔍 DEBUG SERVICE: Token en DTO: {}", dtoRespuesta != null ? dtoRespuesta.getEncuestaToken() : "NULL");
 
         // Eliminar la reseña
         resenaRepository.deleteById(id);
-        log.info("Reseña {} eliminada permanentemente", id);
+        log.info("✅ Reseña {} eliminada permanentemente", id);
 
         return dtoRespuesta;
     }

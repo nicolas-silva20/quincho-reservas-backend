@@ -107,9 +107,17 @@ public class ResenaController {
     @DeleteMapping("/admin/{id}")
     public ResponseEntity<ApiResponseDTO<ResenaDTO>> eliminarResena(@PathVariable Long id) {
         try {
+            log.info("🔍 DEBUG: Intentando eliminar reseña ID: {}", id);
             ResenaDTO resenaDTO = resenaService.eliminarResena(id);
-            return ResponseEntity.ok(ApiResponseDTO.success(resenaDTO, "Reseña eliminada"));
+            log.info("🔍 DEBUG: DTO recibido del servicio: {}", resenaDTO);
+            log.info("🔍 DEBUG: Token en DTO: {}", resenaDTO != null ? resenaDTO.getEncuestaToken() : "NULL");
+            
+            ApiResponseDTO<ResenaDTO> response = ApiResponseDTO.success(resenaDTO, "Reseña eliminada");
+            log.info("🔍 DEBUG: Response a enviar: {}", response);
+            
+            return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
+            log.error("❌ Error al eliminar reseña: {}", e.getMessage());
             return ResponseEntity
                     .badRequest()
                     .body(ApiResponseDTO.error(e.getMessage()));
