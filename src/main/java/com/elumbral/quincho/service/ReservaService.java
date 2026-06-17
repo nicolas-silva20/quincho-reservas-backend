@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -31,9 +32,12 @@ public class ReservaService {
     private final ClienteService clienteService;
     private final ExperienciaService experienciaService;
     private final DisponibilidadService disponibilidadService;
+    private final FeriadoService feriadoService;
     private final EmailService emailService;
 
     private static final BigDecimal DEPOSITO_GARANTIA = new BigDecimal("130000");
+    private static final BigDecimal PRECIO_MARTES_MIERCOLES_JUEVES = new BigDecimal("200000");
+    private static final BigDecimal PRECIO_VIERNES_FINDE_FERIADO = new BigDecimal("250000");
 
     /**
      * Crear una nueva reserva
@@ -52,6 +56,8 @@ public class ReservaService {
             throw new FechaNoDisponibleException(request.getFechaEvento(), request.getHoraInicio());
         }
 
+        validarHorarioPermitido(request.getFechaEvento(), request.getHoraInicio());
+
         // Buscar o crear cliente
         Cliente cliente = clienteService.buscarOCrearCliente(
                 request.getNombreCliente(),
@@ -62,19 +68,12 @@ public class ReservaService {
         // Obtener experiencia
         Experiencia experiencia = experienciaService.obtenerPorId(request.getExperienciaId());
 
-        // Calcular precios - usar los del request si están disponibles
-
-        BigDecimal precioExperiencia;
-        if (request.getPrecioTotal() != null && request.getPrecioTotal() > 0) {
-            // Usar el precio calculado en el frontend
-            precioExperiencia = BigDecimal.valueOf(request.getPrecioTotal());
-        } else {
-            // Fallback al precio de la experiencia
-            precioExperiencia = experiencia.getPrecioFijo()
-                    ? experiencia.getPrecioBase()
-                    : experiencia.getPrecioBase();
-        }
-BigDecimal precioTotal = precioExperiencia.add(DEPOSITO_GARANTIA);
+        // Calcular precio real en servidor para no depender del request
+        BigDecimal precioExperiencia = calcularPrecioExperiencia(request.getFechaEvento(), request.getHoraInicio());
+        BigDecimal precioExtras = request.getPrecioExtras() != null && request.getPrecioExtras() > 0
+            ? BigDecimal.valueOf(request.getPrecioExtras())
+            : BigDecimal.ZERO;
+        BigDecimal precioTotal = precioExperiencia.add(precioExtras).add(DEPOSITO_GARANTIA);
 
         // Crear reserva
         Reserva reserva = new Reserva();
@@ -99,6 +98,37 @@ BigDecimal precioTotal = precioExperiencia.add(DEPOSITO_GARANTIA);
         log.info("Reserva creada exitosamente con ID: {}", reservaGuardada.getId());
 
         return convertirADTO(reservaGuardada);
+    }
+
+    private void validarHorarioPermitido(LocalDate fecha, LocalTime hora) {
+        int diaSemana = fecha.getDayOfWeek().getValue();
+        if ((diaSemana == 2 || diaSemana == 3) && LocalTime.of(19, 0).equals(hora)) {
+            throw new ReservaException("Martes y miércoles solo están disponibles en el turno tarde (12:00 - 19:00)");
+        }
+    }
+
+    private BigDecimal calcularPrecioExperiencia(LocalDate fecha, LocalTime hora) {
+        int diaSemana = fecha.getDayOfWeek().getValue();
+        boolean esTurnoTarde = LocalTime.of(12, 0).equals(hora);
+        boolean esTurnoNoche = LocalTime.of(19, 0).equals(hora);
+
+        if (!esTurnoTarde && !esTurnoNoche) {
+            throw new ReservaException("Horario inválido. Solo se permiten los turnos 12:00 y 19:00.");
+        }
+
+        if (feriadoService.esFeriado(fecha)) {
+            return PRECIO_VIERNES_FINDE_FERIADO;
+        }
+
+        if (diaSemana == 2 || diaSemana == 3 || diaSemana == 4) {
+            return PRECIO_MARTES_MIERCOLES_JUEVES;
+        }
+
+        if (diaSemana == 5 || diaSemana == 6 || diaSemana == 7) {
+            return PRECIO_VIERNES_FINDE_FERIADO;
+        }
+
+        throw new ReservaException("No se realizan reservas los lunes");
     }
 
     /**
