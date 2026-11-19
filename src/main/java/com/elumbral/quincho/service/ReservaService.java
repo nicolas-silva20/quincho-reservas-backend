@@ -36,8 +36,10 @@ public class ReservaService {
     private final EmailService emailService;
 
     private static final BigDecimal DEPOSITO_GARANTIA = new BigDecimal("130000");
-    private static final BigDecimal PRECIO_MARTES_MIERCOLES_JUEVES = new BigDecimal("200000");
-    private static final BigDecimal PRECIO_VIERNES_FINDE_FERIADO = new BigDecimal("250000");
+    // Promo verano - deben coincidir con tablaPreciosHorarios del frontend
+    private static final BigDecimal PRECIO_MARTES_MIERCOLES = new BigDecimal("250000");
+    private static final BigDecimal PRECIO_JUEVES_VIERNES = new BigDecimal("300000");
+    private static final BigDecimal PRECIO_FINDE_FERIADO = new BigDecimal("380000");
 
     /**
      * Crear una nueva reserva
@@ -117,15 +119,19 @@ public class ReservaService {
         }
 
         if (feriadoService.esFeriado(fecha)) {
-            return PRECIO_VIERNES_FINDE_FERIADO;
+            return PRECIO_FINDE_FERIADO;
         }
 
-        if (diaSemana == 2 || diaSemana == 3 || diaSemana == 4) {
-            return PRECIO_MARTES_MIERCOLES_JUEVES;
+        if (diaSemana == 2 || diaSemana == 3) {
+            return PRECIO_MARTES_MIERCOLES;
         }
 
-        if (diaSemana == 5 || diaSemana == 6 || diaSemana == 7) {
-            return PRECIO_VIERNES_FINDE_FERIADO;
+        if (diaSemana == 4 || diaSemana == 5) {
+            return PRECIO_JUEVES_VIERNES;
+        }
+
+        if (diaSemana == 6 || diaSemana == 7) {
+            return PRECIO_FINDE_FERIADO;
         }
 
         throw new ReservaException("No se realizan reservas los lunes");
